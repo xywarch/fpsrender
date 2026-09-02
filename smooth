@@ -1,0 +1,135 @@
+--[[
+    Smooth Mode / FPS Optimizer
+    Open Source
+    F = Toggle
+    Mobile = Use the button
+]]
+
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local UIS = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local enabled = true
+local saved = {}
+
+local function set(obj, prop, value)
+    saved[obj] = saved[obj] or {}
+    if saved[obj][prop] == nil then
+        local ok, old = pcall(function()
+            return obj[prop]
+        end)
+        if ok then saved[obj][prop] = old end
+    end
+
+    pcall(function()
+        obj[prop] = value
+    end)
+end
+
+local function optimize(obj)
+    if not enabled then return end
+
+    if obj:IsA("BasePart") then
+        set(obj, "CastShadow", false)
+
+    elseif obj:IsA("ParticleEmitter")
+        or obj:IsA("Trail")
+        or obj:IsA("Beam") then
+        set(obj, "Enabled", false)
+
+    elseif obj:IsA("Smoke")
+        or obj:IsA("Fire")
+        or obj:IsA("Sparkles") then
+        set(obj, "Enabled", false)
+
+    elseif obj:IsA("PostEffect") then
+        set(obj, "Enabled", false)
+    end
+end
+
+local function enable()
+    enabled = true
+
+    for _, obj in ipairs(Lighting:GetDescendants()) do
+        optimize(obj)
+    end
+
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        optimize(obj)
+    end
+end
+
+local function disable()
+    enabled = false
+
+    for obj, props in pairs(saved) do
+        if obj and obj.Parent then
+            for prop, value in pairs(props) do
+                pcall(function()
+                    obj[prop] = value
+                end)
+            end
+        end
+    end
+
+    table.clear(saved)
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "SmoothMode"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.fromOffset(130, 45)
+button.Position = UDim2.new(0.5, -65, 0.85, 0)
+button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+button.TextColor3 = Color3.new(1, 1, 1)
+button.TextSize = 16
+button.Text = "SMOOTH: ON"
+button.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = button
+
+local function toggle()
+    if enabled then
+        disable()
+        button.Text = "SMOOTH: OFF"
+    else
+        enable()
+        button.Text = "SMOOTH: ON"
+    end
+end
+
+button.Activated:Connect(toggle)
+
+UIS.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == Enum.KeyCode.F then
+        toggle()
+    end
+end)
+
+Workspace.DescendantAdded:Connect(function(obj)
+    if enabled then
+        task.defer(function()
+            optimize(obj)
+        end)
+    end
+end)
+
+Lighting.DescendantAdded:Connect(function(obj)
+    if enabled then
+        task.defer(function()
+            optimize(obj)
+        end)
+    end
+end)
+
+enable()
+
+print("[Smooth Mode] Enabled")
