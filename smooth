@@ -1,1 +1,289 @@
-loadstring(game:HttpGet("https://api.rubis.app/v2/scrap/XDvjoaLSUCtQE8LA/raw"))()
+-- Developer Combat Tools
+-- For your own Roblox game
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local ESPEnabled = false
+local AimEnabled = false
+local HitboxEnabled = false
+
+local NPCFolder = workspace:WaitForChild("NPCs")
+
+--------------------------------------------------
+-- UI
+--------------------------------------------------
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "DeveloperTools"
+gui.Parent = player.PlayerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0,220,0,260)
+frame.Position = UDim2.new(.5,-110,.5,-130)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,15)
+corner.Parent = frame
+
+
+local function createButton(text,y)
+
+	local button = Instance.new("TextButton")
+
+	button.Size = UDim2.new(1,-20,0,45)
+	button.Position = UDim2.new(0,10,0,y)
+	button.Text = text
+
+	button.BackgroundColor3 =
+		Color3.fromRGB(40,40,50)
+
+	button.TextColor3 =
+		Color3.new(1,1,1)
+
+	button.Parent = frame
+
+
+	local c = Instance.new("UICorner")
+	c.Parent = button
+
+	return button
+end
+
+
+local espButton =
+	createButton("ESP: OFF",20)
+
+local aimButton =
+	createButton("Aim Assist: OFF",80)
+
+local hitButton =
+	createButton("Hitbox: OFF",140)
+
+
+--------------------------------------------------
+-- ESP SYSTEM
+--------------------------------------------------
+
+local function addESP(model)
+
+	if model:FindFirstChild("DevESP") then
+		return
+	end
+
+	local highlight =
+		Instance.new("Highlight")
+
+	highlight.Name="DevESP"
+	highlight.FillTransparency=.5
+	highlight.OutlineTransparency=0
+
+	highlight.Parent=model
+end
+
+
+local function removeESP(model)
+
+	local h =
+		model:FindFirstChild("DevESP")
+
+	if h then
+		h:Destroy()
+	end
+
+end
+
+
+local function updateESP()
+
+	for _,npc in ipairs(NPCFolder:GetChildren()) do
+
+		if ESPEnabled then
+			addESP(npc)
+		else
+			removeESP(npc)
+		end
+
+	end
+
+end
+
+
+--------------------------------------------------
+-- TARGET SYSTEM
+--------------------------------------------------
+
+local function getClosestNPC()
+
+	local closest=nil
+	local distance=math.huge
+
+
+	for _,npc in ipairs(NPCFolder:GetChildren()) do
+
+		local root =
+			npc:FindFirstChild("HumanoidRootPart")
+
+		if root then
+
+			local pos =
+				camera:WorldToViewportPoint(root.Position)
+
+			local mouse =
+				UserInputService:GetMouseLocation()
+
+
+			local dist =
+				(Vector2.new(pos.X,pos.Y)
+				-
+				Vector2.new(mouse.X,mouse.Y)).Magnitude
+
+
+			if dist < distance then
+
+				distance=dist
+				closest=npc
+
+			end
+
+		end
+	end
+
+	return closest
+end
+
+
+--------------------------------------------------
+-- AIM TRAINING
+--------------------------------------------------
+
+RunService.RenderStepped:Connect(function()
+
+	if AimEnabled then
+
+		local target =
+			getClosestNPC()
+
+
+		if target then
+
+			local head =
+				target:FindFirstChild("Head")
+
+
+			if head then
+
+				camera.CFrame =
+					CFrame.lookAt(
+						camera.CFrame.Position,
+						head.Position
+					)
+
+			end
+		end
+	end
+
+
+end)
+
+
+--------------------------------------------------
+-- HITBOX DEBUG
+--------------------------------------------------
+
+local function hitbox(model)
+
+	local root =
+		model:FindFirstChild("HumanoidRootPart")
+
+	if not root then return end
+
+
+	local box =
+		Instance.new("BoxHandleAdornment")
+
+	box.Name="DebugHitbox"
+	box.Adornee=root
+	box.Size=root.Size
+	box.Transparency=.5
+	box.AlwaysOnTop=true
+
+	box.Parent=root
+
+end
+
+
+local function clearHitbox(model)
+
+	local root =
+		model:FindFirstChild("HumanoidRootPart")
+
+	if root then
+
+		local h =
+			root:FindFirstChild("DebugHitbox")
+
+		if h then
+			h:Destroy()
+		end
+	end
+
+end
+
+
+--------------------------------------------------
+-- BUTTONS
+--------------------------------------------------
+
+espButton.MouseButton1Click:Connect(function()
+
+	ESPEnabled = not ESPEnabled
+
+	espButton.Text =
+		"ESP: "..(ESPEnabled and "ON" or "OFF")
+
+	updateESP()
+
+end)
+
+
+aimButton.MouseButton1Click:Connect(function()
+
+	AimEnabled = not AimEnabled
+
+	aimButton.Text =
+		"Aim Assist: "..(AimEnabled and "ON" or "OFF")
+
+end)
+
+
+
+hitButton.MouseButton1Click:Connect(function()
+
+	HitboxEnabled =
+		not HitboxEnabled
+
+
+	hitButton.Text =
+		"Hitbox: "..(HitboxEnabled and "ON" or "OFF")
+
+
+	for _,npc in ipairs(NPCFolder:GetChildren()) do
+
+		if HitboxEnabled then
+			hitbox(npc)
+		else
+			clearHitbox(npc)
+		end
+
+	end
+
+end)
