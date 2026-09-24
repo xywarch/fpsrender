@@ -1,1 +1,1 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/xywarch/CatMM2/refs/heads/main/Aim"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/ArchPremium/ExodusSuite/refs/heads/main/MM2"))()
